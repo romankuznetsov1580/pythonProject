@@ -34,31 +34,29 @@ async def get_handler(request):
 async def get_handler(request, post_id):
     return text('PUT request body - {}, post_id - {}'.format(request.body, post_id))
 
+async def get_all_posts_from_db():
+   connect_to_db_url = 'dbname=rainbow_database user=unicorn_user password=magical_password host=0.0.0.0 port=5430'
+    #  открываем пул коннектов к базе
+   async with aiopg.create_pool(connect_to_db_url) as pool:
+       # забираем коннект из пула
+       async with pool.acquire() as conn:
+           # берём курсор - чтобы выополять запросы
+           async with conn.cursor() as cur:
+               await cur.execute("SELECT * from posts;")
+               all_posts = []
+               async for post in cur:
+                   all_posts.append(post)
+   return all_posts
+   # возвращаем список постов
+
 @app.route('/posts', methods=['GET'])
-async def get_handler_1(request, post):
-    return json({'result': "{}".format(post)})
-
-dsn = 'dbname=rainbow_database user=unicorn_user password=magical_password host=0.0.0.0 port=5430'
-async def go():
-    async with aiopg.create_pool(dsn) as pool:
-        async with pool.acquire() as conn:
-            async with conn.cursor() as cur:
-                await cur.execute("SELECT * from posts")
-                ret = []
-                async for row in cur:
-                    ret.append(row)
-                    print(row)
-                # return ret
-
-                        # print(row)
-                    # assert ret == [(1,)]
-
-database_1 = database_1.append(go())
-print(database_1)
+async def get_handler(request):
+    all_posts = await get_all_posts_from_db()
+    return json({'result': all_posts})
 
 
 loop = asyncio.get_event_loop()
-loop.run_until_complete(go())
+loop.run_until_complete(get_all_posts_from_db())
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8001, auto_reload=True)
