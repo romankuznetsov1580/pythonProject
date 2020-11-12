@@ -14,14 +14,48 @@ async def test(request):
 async def test1(request):
     return sanic_json({"hello": "ROMA"})
 
-@app.route("/post/<post_num:int>", methods=['GET'])
-async def test2(request, post_num):
+@app.route("/post/<post_id:int>", methods=['GET'])
+async def search_by_id_1(request, post_id):
+    # написать функцию которая будет получать номер айди и находить в базе соответсвующую строку и выдавать
+    print(request.body)
+    import json
+    connect_to_db_url = 'dbname=rainbow_database user=unicorn_user password=magical_password host=0.0.0.0 port=5430'
+    #  открываем пул коннектов к базе
+    async with aiopg.create_pool(connect_to_db_url) as pool:
+        # забираем коннект из пула
+        async with pool.acquire() as conn:
+            # берём курсор - чтобы выополять запросы
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT * from posts where id = {id};".format(id=post_id))
+                post = []
+                async for find_post in cur:
+                    post.append(find_post)
+                    print(find_post)
+    return text('POST - {}, post id - {}'.format(post, post_id))
+    #return json({"post_num - {}".format(post_num)})
+
+@app.route("/post/search", methods=['GET'])
+async def search_by_id_2(request):
     # написать функцию которая будет получать номер айди и находить в базе соответсвующую строку и выдавать
     # if not isinstance(post_num, int):
     # if not post_num.isdigit():
-    #     return text(body='post_num must be integer', status=400)
+    print(request.body)
+    import json
+    connect_to_db_url = 'dbname=rainbow_database user=unicorn_user password=magical_password host=0.0.0.0 port=5430'
+    #  открываем пул коннектов к базе
+    async with aiopg.create_pool(connect_to_db_url) as pool:
+        # забираем коннект из пула
+        async with pool.acquire() as conn:
+            # берём курсор - чтобы выополять запросы
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT * from posts where id={id};".format(id=request.json['id']))
+                post = []
+                async for find_post in cur:
+                    post.append(find_post)
+                    print(cur)
+
+    return text('POST - {}, post id - {}'.format(post, request.json))
     #return json({"post_num - {}".format(post_num)})
-    return sanic_json({"post number" : "{}".format(post_num)})
 
 @app.route('/post', methods=['POST'])
 async def post_handler(request):
